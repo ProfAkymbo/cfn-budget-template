@@ -1,0 +1,25 @@
+Resources:
+  MyBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: MyBudget
+        BudgetLimit:
+          Amount: 1000
+          Unit: USD
+        TimeUnit: MONTHLY
+        BudgetType: COST
+        CostFilters:  # Corrected: Add a dictionary with your filter criteria here
+          # Example:
+          # Service: AWS::EC2
+          # Tags:
+          #   Name: MyProductionInstance
+        NotificationsWithSubscribers:
+          - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+            NotificationState: ALARM
+          - SubscriptionType: EMAIL
+            Address: your@example.com
