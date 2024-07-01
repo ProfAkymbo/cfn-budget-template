@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  EventBridgeSchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: SchedulerRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+
+  EventBridgeSchedulerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: SchedulerPolicy
+      Roles:
+        - Ref: EventBridgeSchedulerRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource: 
+              - !GetAtt CheckBudgetLambda.Arn
+              
+
+
+  # EventBridge Scheduler (to run every 2 hours)
+  BudgetCheckScheduler:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Description: "Budget Check Scheduler"
+      FlexibleTimeWindow:
+        Mode: "FLEXIBLE"
+        MaximumWindowInMinutes: 1
+      Name: "BudgetCheckSchedule"
+      ScheduleExpression: "rate(120 minutes)"  # Runs every 2 hours
+      State: ENABLED
+      Target:
+        Arn: !GetAtt CheckBudgetLambda.Arn
+        RoleArn: !GetAtt EventBridgeSchedulerRole.Arn
+
+  
+
+  MyDeleteFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - events.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: BasicLambdaAdminExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "*"
+                Resource: "*"
+
+  CheckBudgetLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: "whole-sandbox-cleanup-code-TIMEOUTERROR"
+      Code:
+        S3Bucket: "cil-sandbox-cleaner-bucket"
+        S3Key: "sandbox_cleaner.zip"
+      Handler: sandbox_cleaner.lambda_handler
+      Runtime: python3.10
+      Role: !GetAtt MyDeleteFunctionRole.Arn
+  
+ 
+
+
+
+
+
+
+
+
+
+
+      
